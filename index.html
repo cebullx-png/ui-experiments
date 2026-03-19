@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>White Cat</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #f5f5f0;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      color: #222;
+      letter-spacing: 0.05em;
+    }
+
+    header p {
+      color: #888;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    main {
+      max-width: 860px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .cat-hero {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      overflow: hidden;
+      display: flex;
+      gap: 2rem;
+      padding: 2rem;
+      align-items: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .cat-illustration {
+      flex-shrink: 0;
+      font-size: 8rem;
+      line-height: 1;
+    }
+
+    .cat-intro h2 {
+      font-size: 1.6rem;
+      margin-bottom: 0.75rem;
+      color: #111;
+    }
+
+    .cat-intro p {
+      line-height: 1.7;
+      color: #555;
+    }
+
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .fact-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .fact-card .icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .fact-card h3 {
+      font-size: 1rem;
+      font-weight: bold;
+      margin-bottom: 0.4rem;
+      color: #222;
+    }
+
+    .fact-card p {
+      font-size: 0.9rem;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .traits {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .traits h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1.25rem;
+      color: #111;
+    }
+
+    .trait-list {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    .trait-list li {
+      background: #f0eeea;
+      border-radius: 20px;
+      padding: 0.4rem 1rem;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 560px) {
+      .cat-hero {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>The White Cat</h1>
+    <p>Pure, graceful, and endlessly curious</p>
+  </header>
+
+  <main>
+    <div class="cat-hero">
+      <div class="cat-illustration">🐱</div>
+      <div class="cat-intro">
+        <h2>Snow-White and Serene</h2>
+        <p>
+          White cats are among the most striking and elegant of all domestic cats.
+          With their pristine coats and often vivid blue or odd-colored eyes, they
+          carry an air of quiet mystery. Each one is unique — some are playful and
+          mischievous, others calm and contemplative, but all are undeniably beautiful.
+        </p>
+      </div>
+    </div>
+
+    <div class="facts-grid">
+      <div class="fact-card">
+        <div class="icon">👁️</div>
+        <h3>Striking Eyes</h3>
+        <p>White cats often have blue, green, gold, or odd-colored eyes (one of each color), which is called heterochromia.</p>
+      </div>
+      <div class="fact-card">
+        <div class="icon">🧬</div>
+        <h3>Rare Coat</h3>
+        <p>True white cats make up only about 5% of the domestic cat population. Their color comes from a special masking gene.</p>
+      </div>
+      <div class="fact-card">
+        <div class="icon">🔇</div>
+        <h3>Possible Deafness</h3>
+        <p>White cats with blue eyes have a higher chance of being deaf in one or both ears due to a genetic link affecting the inner ear.</p>
+      </div>
+      <div class="fact-card">
+        <div class="icon">☀️</div>
+        <h3>Sun Sensitive</h3>
+        <p>Their pale skin underneath means white cats can be susceptible to sunburn and should have limited direct sun exposure.</p>
+      </div>
+    </div>
+
+    <div class="traits">
+      <h2>Common Personality Traits</h2>
+      <ul class="trait-list">
+        <li>Gentle</li>
+        <li>Affectionate</li>
+        <li>Curious</li>
+        <li>Intelligent</li>
+        <li>Calm</li>
+        <li>Playful</li>
+        <li>Independent</li>
+        <li>Loyal</li>
+        <li>Soft-spoken</li>
+        <li>Observant</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    <p>A tribute to the beauty of white cats everywhere.</p>
+  </footer>
+
+</body>
+</html>
