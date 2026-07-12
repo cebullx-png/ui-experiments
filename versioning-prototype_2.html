@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wersjonowanie — makieta klikalnalna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --grey-900:#232936; --grey-800:#384350; --grey-700:#57616D; --grey-600:#6A7580;
+    --grey-500:#949EA6; --grey-400:#B5BDC3; --grey-300:#DBE0E3; --grey-200:#E9EDEE;
+    --grey-100:#F3F5F6; --grey-050:#F9FAFB; --white:#FFFFFF;
+    --mars:#FF5831; --green:#54CB0B; --green-700:#399903; --yellow:#FAB700;
+    --red:#F52922; --blue:#0B68FF;
+    --obj-accent:#FF5831;      /* proces OBIEKTU */
+    --ver-accent:#0B68FF;      /* proces WERSJI */
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --shadow-1:0 4px 12px rgba(35,41,54,.06);
+    --shadow-2:0 16px 32px rgba(35,41,54,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font); color:var(--grey-900); background:#E7EBEE;
+    -webkit-font-smoothing:antialiased; line-height:1.4;
+  }
+  button{font-family:inherit; cursor:pointer}
+
+  /* ---------- top toolbar (prototype meta) ---------- */
+  .proto-bar{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:12px 20px; background:var(--grey-900); color:#fff;
+  }
+  .proto-bar .title{font-weight:600; font-size:14px; letter-spacing:-.1px}
+  .proto-bar .sub{font-size:12px; color:#B9C1CB; max-width:640px}
+  .proto-bar .spacer{flex:1}
+  .proto-bar button{
+    background:transparent; color:#fff; border:1px solid rgba(255,255,255,.28);
+    border-radius:8px; padding:6px 12px; font-size:12px; font-weight:500;
+  }
+  .proto-bar button:hover{background:rgba(255,255,255,.1)}
+
+  /* ---------- layout ---------- */
+  .stage{display:flex; gap:0; align-items:stretch; min-height:calc(100vh - 49px)}
+  .app-col{flex:1 1 62%; min-width:0; display:flex; flex-direction:column; overflow:hidden}
+  .map-col{flex:0 0 400px; background:#fff; border-left:1px solid var(--grey-300);
+    display:flex; flex-direction:column; max-height:calc(100vh - 49px); overflow:auto}
+  @media(max-width:1080px){
+    .stage{flex-direction:column}
+    .map-col{flex:none; border-left:none; border-top:1px solid var(--grey-300); max-height:none}
+  }
+
+  /* ---------- app chrome ---------- */
+  .app{background:var(--grey-100); flex:1; display:flex; flex-direction:column; overflow:auto; position:relative}
+  .navbar{
+    height:48px; background:#fff; border-bottom:1px solid var(--grey-200);
+    display:flex; align-items:center; padding:0 12px; gap:12px; flex-shrink:0;
+  }
+  .logo{display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; letter-spacing:.3px}
+  .logo .mark{width:16px;height:16px;border-radius:4px;background:var(--grey-900)}
+  .logo .cog{width:18px;height:18px;border-radius:50%;border:2px solid var(--grey-400)}
+  .navbar .settings{font-size:13px;color:var(--grey-700)}
+  .search{
+    flex:1; max-width:420px; margin:0 auto; height:30px; border:1px solid var(--grey-200);
+    background:var(--grey-050); border-radius:8px; display:flex; align-items:center;
+    padding:0 10px; color:var(--grey-500); font-size:12px; gap:6px;
+  }
+  .nav-right{display:flex; align-items:center; gap:14px; color:var(--grey-500)}
+  .nav-right .dot{width:18px;height:18px;border-radius:50%;background:var(--grey-200)}
+  .nav-right .user{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grey-700)}
+  .nav-right .ava{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#FF9E7A,var(--mars))}
+
+  .body-row{flex:1; display:flex; min-height:0}
+  .rail{width:52px; background:#fff; border-right:1px solid var(--grey-200);
+    display:flex; flex-direction:column; align-items:center; padding-top:12px; gap:14px; flex-shrink:0}
+  .rail .ico{width:22px;height:22px;border-radius:6px;background:var(--grey-200)}
+  .rail .ico.active{background:var(--mars)}
+  .content{flex:1; min-width:0; display:flex; flex-direction:column; overflow:auto}
+
+  /* page header */
+  .page-header{background:#fff; border-bottom:1px solid var(--grey-200); flex-shrink:0}
+  .ph-row{height:64px; display:flex; align-items:center; padding:0 20px; gap:14px}
+  .back{width:24px;height:24px;color:var(--grey-500);display:flex;align-items:center;justify-content:center}
+  .sep{width:1px;height:26px;background:var(--grey-200)}
+  .app-ava{width:32px;height:32px;border-radius:8px;background:var(--grey-100);
+    display:flex;align-items:center;justify-content:center;color:var(--mars);font-weight:700;font-size:14px}
+  .app-title{font-size:17px;font-weight:500;color:var(--grey-600)}
+  .edit-ico{color:var(--grey-400)}
+  .ph-spacer{flex:1}
+  .obj-live{font-size:12px;color:var(--grey-600);margin-right:6px}
+  .obj-actions{display:flex;align-items:center;gap:8px}
+
+  /* status pill */
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; height:20px; padding:0 9px;
+    border-radius:20px; font-size:10px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+    border:1px solid var(--grey-300); color:var(--grey-700); background:var(--grey-050); white-space:nowrap;
+  }
+  .pill .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .pill.green{color:var(--green-700); border-color:rgba(57,153,3,.35); background:#F1F9EC}
+  .pill.amber{color:#A9760A; border-color:rgba(250,183,0,.45); background:#FDF7E7}
+  .pill.grey{color:var(--grey-600); border-color:var(--grey-300); background:var(--grey-050)}
+  .pill.red{color:#C21C16; border-color:rgba(245,41,34,.35); background:#FDEEEE}
+
+  /* buttons */
+  .btn{height:32px; padding:0 14px; border-radius:8px; font-size:13px; font-weight:500;
+    border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; line-height:1; white-space:nowrap}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.ghost{background:#fff; border-color:var(--grey-300); color:var(--grey-800)}
+  .btn.ghost:hover:not(:disabled){background:var(--grey-050)}
+  .btn.blue{background:var(--blue); color:#fff}
+  .btn.blue:hover:not(:disabled){background:#0a5ce0}
+  .btn.green{background:var(--green); color:#fff}
+  .btn.green:hover:not(:disabled){background:#4bb808}
+  .btn.yellow{background:var(--yellow); color:var(--grey-900)}
+  .btn.yellow:hover:not(:disabled){background:#e9aa00}
+  .btn.red{background:var(--red); color:#fff}
+  .btn.red:hover:not(:disabled){background:#dc231d}
+  .btn.icon{width:32px;padding:0;justify-content:center}
+  .caret{font-size:9px;opacity:.8}
+
+  /* sub bar (version) */
+  .subbar{height:52px; background:var(--grey-050); border-bottom:1px solid var(--grey-200);
+    display:flex; align-items:center; padding:0 20px; gap:12px; flex-shrink:0}
+  .subbar .alert{font-size:12px;color:var(--grey-600)}
+  .subbar .spacer{flex:1}
+  .subbar .updated{font-size:12px;color:var(--grey-500);margin-right:2px}
+  .ver-picker{position:relative}
+  .ver-btn{height:32px;padding:0 10px;border:1px solid var(--grey-300);background:#fff;border-radius:8px;
+    font-size:12px;color:var(--grey-800);display:inline-flex;align-items:center;gap:8px;font-weight:500}
+  .ver-btn .d{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .ver-actions{display:flex;align-items:center;gap:8px}
+  .restore-wrap{position:relative}
+
+  /* dropdown menus */
+  .menu{position:absolute; top:calc(100% + 6px); right:0; background:#fff; border:1px solid var(--grey-200);
+    border-radius:10px; box-shadow:var(--shadow-2); padding:6px; min-width:180px; z-index:40}
+  .menu.left{right:auto; left:0}
+  .menu .item{padding:8px 10px;border-radius:7px;font-size:13px;color:var(--grey-800);cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .menu .item:hover{background:var(--grey-100)}
+  .ver-menu{min-width:300px}
+  .ver-menu .item{align-items:flex-start;flex-direction:column;gap:2px}
+  .ver-menu .vi-top{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px}
+  .ver-menu .vi-name{font-size:13px;font-weight:500;color:var(--grey-900)}
+  .ver-menu .vi-date{font-size:11px;color:var(--grey-500)}
+  .ver-menu .item.current{background:#EEF4FF}
+
+  /* form placeholder (out of scope) */
+  .canvas{flex:1; padding:28px 20px 40px; display:flex; justify-content:center}
+  .canvas-inner{width:100%; max-width:860px}
+  .oos-note{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--grey-500);
+    margin-bottom:14px;justify-content:center}
+  .oos-note .tag{border:1px dashed var(--grey-400);border-radius:6px;padding:2px 8px;color:var(--grey-500)}
+  .card{background:#fff;border:1px solid var(--grey-200);border-radius:14px;box-shadow:var(--shadow-1);
+    margin-bottom:16px;overflow:hidden}
+  .card-head{display:flex;align-items:center;gap:12px;padding:18px 22px}
+  .card-head .chk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--grey-300)}
+  .card-head .h{font-size:15px;font-weight:600;color:var(--grey-900)}
+  .card-head .s{font-size:12px;color:var(--grey-500)}
+  .card-head .txtwrap{flex:1;min-width:0}
+  .card-head .opt{font-size:9px;font-weight:600;letter-spacing:.5px;color:var(--grey-500);
+    background:var(--grey-100);border-radius:5px;padding:2px 6px;text-transform:uppercase}
+  .card-body{padding:6px 22px 26px;border-top:1px solid var(--grey-100)}
+  .skel-label{width:120px;height:9px;border-radius:5px;background:var(--grey-200);margin:18px 0 8px}
+  .skel-field{width:100%;height:38px;border-radius:8px;background:var(--grey-050);border:1px solid var(--grey-200)}
+  .disabled-overlay{opacity:.85}
+
+  /* generic modal */
+  .overlay{position:fixed; inset:0; background:rgba(35,41,54,.45); display:flex; align-items:center;
+    justify-content:center; z-index:100; padding:20px}
+  .modal{background:#fff; border-radius:16px; width:520px; max-width:100%; box-shadow:var(--shadow-2); overflow:hidden}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;
+    border-bottom:1px solid var(--grey-100)}
+  .modal-head h3{margin:0;font-size:18px;font-weight:600}
+  .modal-head .x{border:none;background:none;color:var(--grey-500);font-size:20px;line-height:1}
+  .modal-body{padding:22px 24px}
+  .modal-body label.lbl{display:block;font-size:13px;font-weight:600;color:var(--grey-800);margin:0 0 8px}
+  .modal-body .fld{width:100%;height:40px;border:1px solid var(--grey-300);border-radius:8px;padding:0 12px;
+    font-size:14px;font-family:inherit;color:var(--grey-900);margin-bottom:18px}
+  .modal-body textarea.fld{height:88px;padding:10px 12px;resize:none;line-height:1.4}
+  .radio-group{border:1px solid var(--grey-200);border-radius:10px;overflow:hidden}
+  .radio{display:flex;gap:12px;padding:14px 16px;cursor:pointer;align-items:flex-start}
+  .radio+.radio{border-top:1px solid var(--grey-100)}
+  .radio .ring{width:18px;height:18px;border-radius:50%;border:2px solid var(--grey-400);flex-shrink:0;margin-top:1px}
+  .radio.sel .ring{border-color:var(--blue)}
+  .radio.sel .ring::after{content:"";display:block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin:3px}
+  .radio .rt{font-size:13px;font-weight:600;color:var(--grey-900)}
+  .radio .rd{font-size:12px;color:var(--grey-500)}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--grey-050);
+    border-top:1px solid var(--grey-100)}
+  /* warning modal */
+  .warn-body{padding:34px 40px 10px;text-align:center}
+  .warn-ico{width:72px;height:72px;margin:0 auto 18px;border:2.5px solid var(--grey-600);border-radius:14px;
+    display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:var(--grey-700);
+    clip-path:polygon(50% 4%,96% 92%,4% 92%)}
+  .warn-body h3{margin:0 0 8px;font-size:20px;font-weight:600}
+  .warn-body p{margin:0;color:var(--grey-500);font-size:13px}
+
+  /* ---------- flow map panel ---------- */
+  .map-head{padding:18px 20px 12px;border-bottom:1px solid var(--grey-200)}
+  .map-head h2{margin:0 0 4px;font-size:15px;font-weight:700}
+  .map-head p{margin:0;font-size:12px;color:var(--grey-600)}
+  .map-note{margin:12px 20px 4px;font-size:11.5px;line-height:1.5;color:var(--grey-700);
+    background:var(--grey-050);border:1px solid var(--grey-200);border-radius:10px;padding:10px 12px}
+  .map-note b{color:var(--grey-900)}
+  .machines{display:flex;gap:0;padding:6px 12px 4px}
+  .machine{flex:1;padding:8px 6px}
+  .machine h4{margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    display:flex;align-items:center;gap:6px}
+  .machine.obj h4{color:var(--obj-accent)}
+  .machine.ver h4{color:var(--ver-accent)}
+  .machine .who{font-size:10px;color:var(--grey-500);margin:0 0 4px}
+  .machine svg{width:100%;height:auto;display:block}
+  .m-node{transition:all .35s ease}
+  .m-label{font-size:11px;font-weight:600;fill:var(--grey-500)}
+  .m-edge-label{font-size:8.5px;fill:var(--grey-500)}
+  .pulse{animation:pulse .8s ease}
+  @keyframes pulse{0%{filter:drop-shadow(0 0 0 rgba(0,0,0,0))}
+    35%{filter:drop-shadow(0 0 10px var(--pc))}100%{filter:drop-shadow(0 0 0 rgba(0,0,0,0))}}
+
+  .legend{display:flex;gap:16px;padding:4px 20px 12px;font-size:11px;color:var(--grey-600);flex-wrap:wrap}
+  .legend .k{display:flex;align-items:center;gap:6px}
+  .legend .sw{width:12px;height:12px;border-radius:4px}
+  .sw.obj{background:var(--obj-accent)} .sw.ver{background:var(--ver-accent)}
+
+  .log-wrap{border-top:1px solid var(--grey-200);padding:14px 20px 20px}
+  .log-wrap h3{margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.3px;color:var(--grey-700);
+    text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+  .log-wrap .clr{font-size:11px;font-weight:500;color:var(--grey-500);cursor:pointer;text-transform:none;letter-spacing:0}
+  .log{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+  .log-item{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--grey-800)}
+  .log-item .lt{font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:5px;flex-shrink:0;
+    color:#fff;text-transform:uppercase;margin-top:1px}
+  .log-item .lt.obj{background:var(--obj-accent)} .log-item .lt.ver{background:var(--ver-accent)}
+  .log-empty{font-size:12px;color:var(--grey-400);font-style:italic}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+    background:var(--grey-900);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;
+    box-shadow:var(--shadow-2);opacity:0;pointer-events:none;transition:.3s;z-index:200;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="proto-bar">
+  <div>
+    <div class="title">Wersjonowanie — makieta klikalna</div>
+    <div class="sub">Klikaj akcje w interfejsie. Po prawej mapa dwóch niezależnych procesów: <b>status obiektu</b> i <b>status wersji</b>. Formularz obiektu jest celowo nieklikalny (poza zakresem).</div>
+  </div>
+  <div class="spacer"></div>
+  <button onclick="resetAll()">↺ Reset</button>
+</div>
+
+<div class="stage">
+  <!-- ============ APP MOCKUP ============ -->
+  <div class="app-col">
+    <div class="app" id="app">
+      <div class="navbar">
+        <div class="logo"><span class="mark"></span>synerise</div>
+        <div class="cog" style="width:16px;height:16px;border-radius:50%;border:2px solid var(--grey-400)"></div>
+        <span class="settings">Settings</span>
+        <div class="search">🔍 Search objects, actions, modules</div>
+        <div class="nav-right">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <div class="user"><span class="ava"></span> Synerise (324) ▾</div>
+        </div>
+      </div>
+
+      <div class="body-row">
+        <div class="rail">
+          <span class="ico"></span><span class="ico"></span><span class="ico active"></span>
+          <span class="ico"></span><span class="ico"></span><span class="ico"></span>
+        </div>
+
+        <div class="content">
+          <!-- PAGE HEADER: object level -->
+          <div class="page-header">
+            <div class="ph-row">
+              <span class="back">←</span>
+              <span class="sep"></span>
+              <span class="app-ava">◮</span>
+              <span class="app-title">Unnamed integration</span>
+              <span class="edit-ico">✎</span>
+              <span id="objPill"></span>
+              <div class="ph-spacer"></div>
+              <span class="obj-live" id="objLive"></span>
+              <div class="obj-actions" id="objActions"></div>
+            </div>
+          </div>
+
+          <!-- SUB BAR: version level -->
+          <div class="subbar">
+            <span id="verPill"></span>
+            <span class="alert" id="verAlert"></span>
+            <div class="spacer"></div>
+            <span class="updated" id="verUpdated">Updated: 12 Aug 2023 14:23</span>
+            <div class="ver-picker">
+              <button class="ver-btn" id="verPickerBtn" onclick="toggleMenu('verMenu',event)">
+                <span class="d" id="verPickerDot"></span><span id="verPickerLabel">Version: v1</span> <span class="caret">▾</span>
+              </button>
+              <div class="menu ver-menu" id="verMenu" style="display:none"></div>
+            </div>
+            <div class="ver-actions" id="verActions"></div>
+          </div>
+
+          <!-- FORM (out of scope) -->
+          <div class="canvas">
+            <div class="canvas-inner disabled-overlay">
+              <div class="oos-note"><span class="tag">poza zakresem</span> Treść formularza obiektu jest tu pominięta — liczy się przepływ stanów.</div>
+              <div class="card">
+                <div class="card-head">
+                  <span class="chk"></span>
+                  <div class="txtwrap"><div class="h">General settings</div><div class="s">Define details of request and target event</div></div>
+                </div>
+                <div class="card-body">
+                  <div class="skel-label"></div><div class="skel-field"></div>
+                  <div class="skel-label"></div><div class="skel-field"></div>
+                  <div class="skel-label" style="width:160px"></div>
+                  <div class="skel-field" style="height:64px"></div>
+                </div>
+              </div>
+              <div class="card"><div class="card-head">
+                <span class="chk"></span>
+                <div class="txtwrap"><div class="h">Request</div><div class="s">Define details of request and target event</div></div>
+              </div></div>
+              <div class="card"><div class="card-head">
+                <span class="chk"></span>
+                <div class="txtwrap"><div class="h" style="display:flex;gap:10px;align-items:center">Response customization <span class="opt">optional</span></div><div class="s">Define details of request and target event</div></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FLOW MAP ============ -->
+  <div class="map-col">
+    <div class="map-head">
+      <h2>Dwa niezależne procesy</h2>
+      <p>Podświetlony jest aktualny stan każdego procesu. Zwróć uwagę: akcja jednego nie rusza drugiego.</p>
+    </div>
+
+    <div class="machines">
+      <!-- OBJECT machine -->
+      <div class="machine obj">
+        <h4>● Status obiektu</h4>
+        <p class="who">object name · status · uuid</p>
+        <svg viewBox="0 0 150 250" id="objSvg">
+          <defs>
+            <marker id="ao" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#B5BDC3"/>
+            </marker>
+          </defs>
+          <!-- edges -->
+          <path d="M75,44 L75,82" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#ao)"/>
+          <text class="m-edge-label" x="80" y="66">activate*</text>
+          <path d="M75,126 L75,164" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#ao)"/>
+          <text class="m-edge-label" x="80" y="148">pause / stop</text>
+          <path d="M40,185 C10,185 10,105 40,105" fill="none" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#ao)"/>
+          <text class="m-edge-label" x="2" y="150">activate</text>
+          <!-- nodes -->
+          <g id="obj-DRAFT"><rect class="m-node" x="40" y="14" width="70" height="30" rx="8"/><text class="m-label" x="75" y="33" text-anchor="middle">DRAFT</text></g>
+          <g id="obj-ACTIVE"><rect class="m-node" x="40" y="96" width="70" height="30" rx="8"/><text class="m-label" x="75" y="115" text-anchor="middle">ACTIVE</text></g>
+          <g id="obj-INACTIVE"><rect class="m-node" x="40" y="178" width="70" height="30" rx="8"/><text class="m-label" x="75" y="197" text-anchor="middle">INACTIVE</text></g>
+          <text class="m-edge-label" x="0" y="235">* wymaga opublikowanej wersji</text>
+        </svg>
+      </div>
+
+      <!-- VERSION machine -->
+      <div class="machine ver">
+        <h4>● Status wersji</h4>
+        <p class="who">object config · status · uuid</p>
+        <svg viewBox="0 0 150 250" id="verSvg">
+          <defs>
+            <marker id="av" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#B5BDC3"/>
+            </marker>
+          </defs>
+          <!-- save self loop -->
+          <path d="M112,20 C136,16 136,42 114,40" fill="none" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#av)"/>
+          <text class="m-edge-label" x="120" y="14">save</text>
+          <!-- draft -> published -->
+          <path d="M75,44 L75,82" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#av)"/>
+          <text class="m-edge-label" x="80" y="66">publish</text>
+          <!-- published -> archived -->
+          <path d="M75,126 L75,164" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#av)"/>
+          <text class="m-edge-label" x="80" y="148">overwritten</text>
+          <!-- published -> draft (edit as draft) right -->
+          <path d="M110,108 C140,108 140,32 112,29" fill="none" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#av)"/>
+          <!-- archived -> draft (restore as draft) left -->
+          <path d="M40,190 C6,190 6,30 38,29" fill="none" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#av)"/>
+          <text class="m-edge-label" x="0" y="120">restore</text>
+          <text class="m-edge-label" x="0" y="130">as draft</text>
+          <!-- archived -> published (restore & publish) left short -->
+          <path d="M40,196 C20,196 20,116 38,111" fill="none" stroke="#C7CED3" stroke-width="1.5" marker-end="url(#av)"/>
+          <!-- nodes -->
+          <g id="ver-DRAFT"><rect class="m-node" x="40" y="14" width="70" height="30" rx="8"/><text class="m-label" x="75" y="33" text-anchor="middle">DRAFT</text></g>
+          <g id="ver-PUBLISHED"><rect class="m-node" x="40" y="96" width="70" height="30" rx="8"/><text class="m-label" x="75" y="115" text-anchor="middle">PUBLISHED</text></g>
+          <g id="ver-ARCHIVED"><rect class="m-node" x="40" y="178" width="70" height="30" rx="8"/><text class="m-label" x="75" y="197" text-anchor="middle">ARCHIVED</text></g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="k"><span class="sw obj"></span> proces obiektu</div>
+      <div class="k"><span class="sw ver"></span> proces wersji</div>
+    </div>
+
+    <div class="map-note">
+      <b>Klucz:</b> procesy są w pełni rozdzielne. Akcje wersji (Save / Publish / Edit as draft / Restore) <b>nigdy</b> nie zmieniają statusu obiektu, a akcje obiektu (Activate / Pause / Stop) <b>nigdy</b> nie zmieniają statusu wersji.
+    </div>
+
+    <div class="log-wrap">
+      <h3>Historia akcji <span class="clr" onclick="clearLog()">wyczyść</span></h3>
+      <div class="log" id="log"><div class="log-empty">Jeszcze nic nie zrobiono — kliknij coś w interfejsie.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- modal mount -->
+<div id="modalMount"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   STATE MODEL
+   Two independent state machines:
+   - object: DRAFT | ACTIVE | INACTIVE
+   - version(s): each DRAFT | PUBLISHED | ARCHIVED  (max 1 DRAFT, max 1 PUBLISHED)
+   ============================================================ */
+let uid = 1;
+const initial = () => ({
+  object: 'DRAFT',
+  versions: [ { id: uid++, name: 'First draft', status: 'DRAFT', updated: '12 Aug 2023 14:23' } ],
+  currentId: 1,
+  log: []
+});
+let S;
+
+function resetAll(){ uid = 1; S = initial(); render(); toast('Prototyp zresetowany'); }
+
+/* ---------- helpers ---------- */
+const cur = () => S.versions.find(v => v.id === S.currentId);
+const published = () => S.versions.find(v => v.status === 'PUBLISHED');
+const draft = () => S.versions.find(v => v.status === 'DRAFT');
+const now = () => '12 Aug 2023 14:23';
+
+function pushLog(kind, text){
+  S.log.unshift({ kind, text });
+  if (S.log.length > 30) S.log.pop();
+}
+
+/* ============================================================
+   VERSION FLOW ACTIONS  (touch only the version machine)
+   ============================================================ */
+function saveDraft(){
+  const v = cur();
+  v.updated = now();
+  pushLog('ver', 'Zapisano draft „'+v.name+'" — status wersji bez zmian (DRAFT)');
+  render(); flash('ver'); toast('Zapisano wersję roboczą');
+}
+
+function openPublish(){
+  const v = cur();
+  showPublishModal(v);
+}
+
+function doPublish(name, activateObject){
+  const v = cur();
+  const prev = published();
+  if (prev && prev.id !== v.id) prev.status = 'ARCHIVED';        // overwritten by new version
+  v.status = 'PUBLISHED';
+  v.name = name || v.name;
+  v.updated = now();
+  pushLog('ver', 'Opublikowano „'+v.name+'"'+(prev? ' — poprzednia wersja → ARCHIVED':''));
+  if (activateObject){
+    S.object = 'ACTIVE';
+    pushLog('obj', 'Obiekt aktywowany przy publikacji (opcja w oknie) → ACTIVE');
+  }
+  closeModal(); render(); flash('ver'); if(activateObject) flash('obj');
+  toast(activateObject ? 'Wersja opublikowana i obiekt aktywowany' : 'Wersja opublikowana');
+}
+
+function editAsDraft(){
+  const src = cur();
+  const existing = draft();
+  if (existing && existing.id !== src.id){
+    showOverrideModal(() => { removeDraftThenCopy(src, 'PUBLISHED'); });
+    return;
+  }
+  removeDraftThenCopy(src, 'PUBLISHED');
+}
+
+function restoreAsDraft(){
+  const src = cur();
+  const existing = draft();
+  closeRestoreMenu();
+  if (existing){
+    showOverrideModal(() => { removeDraftThenCopy(src, 'ARCHIVED'); });
+    return;
+  }
+  removeDraftThenCopy(src, 'ARCHIVED');
+}
+
+function removeDraftThenCopy(src, fromLabel){
+  // drop existing draft (if any) then create fresh draft copy of src
+  S.versions = S.versions.filter(v => v.status !== 'DRAFT');
+  const nv = { id: uid++, name: nextVersionName(), status: 'DRAFT', updated: now(), from: src.name };
+  S.versions.unshift(nv);
+  S.currentId = nv.id;
+  const verb = fromLabel === 'ARCHIVED' ? 'Przywrócono' : 'Utworzono';
+  pushLog('ver', verb+' draft na bazie „'+src.name+'" → nowy DRAFT');
+  closeModal(); render(); flash('ver'); toast('Utworzono nową wersję roboczą');
+}
+
+function restoreAndPublish(){
+  const src = cur();
+  closeRestoreMenu();
+  showRestorePublishModal(src);
+}
+
+function showRestorePublishModal(src){
+  const suggested = nextVersionName();
+  const mount = document.getElementById('modalMount');
+  mount.innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-head"><h3>Restore and publish</h3><button class="x" onclick="closeModal()">✕</button></div>
+        <div class="modal-body">
+          <div class="rd" style="font-size:12px;color:var(--grey-500);margin-bottom:16px">
+            Na podstawie „${src.name}" powstanie nowa, opublikowana wersja. „${src.name}" pozostaje archiwalna.
+          </div>
+          <label class="lbl">Name</label>
+          <input class="fld" id="rpName" value="${suggested}" />
+          <label class="lbl">Describe changes</label>
+          <textarea class="fld" id="rpDesc" placeholder="What changed in this version?" style="margin-bottom:4px"></textarea>
+        </div>
+        <div class="modal-foot">
+          <button class="btn ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn blue" onclick="confirmRestorePublish(${src.id})">Restore and publish</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function confirmRestorePublish(srcId){
+  const name = document.getElementById('rpName').value.trim();
+  const src = S.versions.find(v => v.id === srcId);
+  const prev = published();
+  if (prev && prev.id !== src.id) prev.status = 'ARCHIVED';   // dotychczasowa live → ARCHIVED
+  // powstaje NOWA wersja z treści archiwalnej, od razu opublikowana
+  const nv = { id: uid++, name: name || nextVersionName(), status: 'PUBLISHED', updated: now(), from: src.name };
+  S.versions.unshift(nv);
+  S.currentId = nv.id;                                        // widok przechodzi na nową wersję
+  // src pozostaje ARCHIVED
+  pushLog('ver', 'Przywrócono „'+src.name+'" jako nową wersję „'+nv.name+'" → PUBLISHED'+(prev?' (poprzednia live → ARCHIVED)':''));
+  closeModal(); render(); flash('ver'); toast('Utworzono nową opublikowaną wersję z „'+src.name+'"');
+}
+
+function selectVersion(id){
+  S.currentId = id;
+  closeAllMenus();
+  render(); // navigation only — no flow change, no flash
+}
+
+function nextVersionName(){
+  let max = 1;
+  S.versions.forEach(v => { const m = /^v(\d+)$/.exec(v.name); if (m) max = Math.max(max, +m[1]); });
+  return 'v' + (max + 1);
+}
+
+/* ============================================================
+   OBJECT FLOW ACTIONS  (touch only the object machine)
+   ============================================================ */
+function activateObject(){
+  if (S.object === 'DRAFT' && !published()){
+    toast('Najpierw opublikuj wersję — obiekt nie przejdzie w ACTIVE bez opublikowanej wersji');
+    return;
+  }
+  S.object = 'ACTIVE';
+  pushLog('obj', 'Aktywacja obiektu → ACTIVE (status wersji bez zmian)');
+  render(); flash('obj'); toast('Obiekt aktywny');
+}
+function pauseObject(){
+  S.object = 'INACTIVE';
+  pushLog('obj', 'Pauza obiektu → INACTIVE (status wersji bez zmian)');
+  render(); flash('obj'); toast('Obiekt wstrzymany');
+}
+function stopObject(){
+  S.object = 'INACTIVE';
+  pushLog('obj', 'Zatrzymanie obiektu → INACTIVE (status wersji bez zmian)');
+  render(); flash('obj'); toast('Obiekt zatrzymany');
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function showPublishModal(v){
+  const suggested = /^v\d+$/.test(v.name) ? v.name : nextVersionName();
+  const mount = document.getElementById('modalMount');
+  mount.innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-head"><h3>Publish version</h3><button class="x" onclick="closeModal()">✕</button></div>
+        <div class="modal-body">
+          <label class="lbl">Name</label>
+          <input class="fld" id="pubName" value="${suggested}" />
+          <label class="lbl">Describe changes</label>
+          <textarea class="fld" id="pubDesc" placeholder="What changed in this version?" style="margin-bottom:4px"></textarea>
+        </div>
+        <div class="modal-foot">
+          <button class="btn ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn blue" onclick="confirmPublish()">Publish</button>
+        </div>
+      </div>
+    </div>`;
+}
+function pickRadio(el){
+  el.parentElement.querySelectorAll('.radio').forEach(r=>r.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function confirmPublish(){
+  const name = document.getElementById('pubName').value.trim();
+  doPublish(name, false);
+}
+
+function showOverrideModal(onConfirm){
+  window.__overrideCb = onConfirm;
+  const mount = document.getElementById('modalMount');
+  mount.innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="width:520px">
+        <div class="modal-head" style="border:none;padding-bottom:0">
+          <span></span><button class="x" onclick="closeModal()">✕</button>
+        </div>
+        <div class="warn-body">
+          <div class="warn-ico">!</div>
+          <h3>Override draft?</h3>
+          <p>Istnieje już wersja robocza (DRAFT) tego obiektu. Kontynuując, nadpiszesz ją.</p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn ghost" onclick="closeModal()">No, cancel</button>
+          <button class="btn yellow" onclick="confirmOverride()">Yes, override</button>
+        </div>
+      </div>
+    </div>`;
+}
+function confirmOverride(){ const cb = window.__overrideCb; closeModal(); if(cb) cb(); }
+function closeModal(){ document.getElementById('modalMount').innerHTML=''; }
+
+/* ============================================================
+   MENUS
+   ============================================================ */
+function toggleMenu(id, ev){
+  ev && ev.stopPropagation();
+  const el = document.getElementById(id);
+  const open = el.style.display === 'block';
+  closeAllMenus();
+  el.style.display = open ? 'none' : 'block';
+}
+function closeAllMenus(){ document.querySelectorAll('.menu').forEach(m=>m.style.display='none'); }
+function closeRestoreMenu(){ const m=document.getElementById('restoreMenu'); if(m) m.style.display='none'; }
+document.addEventListener('click', closeAllMenus);
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const pillClass = { DRAFT:'grey', ACTIVE:'green', INACTIVE:'red', PUBLISHED:'green', ARCHIVED:'amber' };
+const verDot   = { DRAFT:'var(--grey-500)', PUBLISHED:'var(--green)', ARCHIVED:'var(--yellow)' };
+
+function pill(status){ return `<span class="pill ${pillClass[status]}"><span class="d"></span>${status}</span>`; }
+
+function render(){
+  const v = cur();
+  const pub = published();
+
+  /* object pill + object-level actions */
+  document.getElementById('objPill').innerHTML = pill(S.object);
+  document.getElementById('objLive').textContent = pub ? ('Live version: '+pub.name) : 'No live version';
+  const oa = document.getElementById('objActions');
+  if (S.object === 'ACTIVE'){
+    oa.innerHTML = `<button class="btn yellow" onclick="pauseObject()">Pause</button>
+                    <button class="btn red" onclick="stopObject()">Stop</button>
+                    <button class="btn ghost icon">⋯</button>`;
+  } else {
+    const canActivate = !(S.object==='DRAFT' && !pub);
+    oa.innerHTML = `<button class="btn green" ${canActivate?'':'disabled title="Wymaga opublikowanej wersji"'} onclick="activateObject()">Activate</button>
+                    <button class="btn ghost icon">⋯</button>`;
+  }
+
+  /* version pill + alert + actions */
+  document.getElementById('verPill').innerHTML = pill(v.status);
+  const alertTxt = {
+    DRAFT:"You're editing the draft. Changes take effect after you publish.",
+    PUBLISHED:"The published version is read-only. Make changes in the draft.",
+    ARCHIVED:"The archived version is read-only. Restore as draft to make changes."
+  }[v.status];
+  document.getElementById('verAlert').textContent = alertTxt;
+  document.getElementById('verUpdated').textContent = 'Updated: '+v.updated;
+
+  document.getElementById('verPickerLabel').textContent = 'Version: '+v.name;
+  document.getElementById('verPickerDot').style.background = verDot[v.status];
+
+  const va = document.getElementById('verActions');
+  if (v.status === 'DRAFT'){
+    va.innerHTML = `<button class="btn ghost" onclick="saveDraft()">Save</button>
+                    <button class="btn blue" onclick="openPublish()">Publish</button>`;
+  } else if (v.status === 'PUBLISHED'){
+    va.innerHTML = `<button class="btn blue" onclick="editAsDraft()">Edit as draft</button>`;
+  } else { /* ARCHIVED */
+    va.innerHTML = `<div class="restore-wrap">
+        <button class="btn blue" onclick="toggleMenu('restoreMenu',event)">Restore ▾</button>
+        <div class="menu" id="restoreMenu" style="display:none">
+          <div class="item" onclick="restoreAsDraft()">Restore as draft</div>
+          <div class="item" onclick="restoreAndPublish()">Restore and publish</div>
+        </div>
+      </div>`;
+  }
+
+  /* version picker menu */
+  const vm = document.getElementById('verMenu');
+  vm.innerHTML = S.versions.map(ver => `
+    <div class="item ${ver.id===S.currentId?'current':''}" onclick="selectVersion(${ver.id})">
+      <div class="vi-top">
+        <span class="vi-name">${ver.name}</span>
+        ${pill(ver.status)}
+      </div>
+      <span class="vi-date">${ver.updated}</span>
+    </div>`).join('');
+
+  /* flow map highlight */
+  highlight('obj', S.object);
+  highlight('ver', v.status);
+
+  /* log */
+  const logEl = document.getElementById('log');
+  if (!S.log.length){
+    logEl.innerHTML = '<div class="log-empty">Jeszcze nic nie zrobiono — kliknij coś w interfejsie.</div>';
+  } else {
+    logEl.innerHTML = S.log.map(e => `
+      <div class="log-item"><span class="lt ${e.kind}">${e.kind==='obj'?'OBIEKT':'WERSJA'}</span><span>${e.text}</span></div>`).join('');
+  }
+}
+
+function highlight(machine, status){
+  const states = machine==='obj' ? ['DRAFT','ACTIVE','INACTIVE'] : ['DRAFT','PUBLISHED','ARCHIVED'];
+  const accent = machine==='obj' ? getCSS('--obj-accent') : getCSS('--ver-accent');
+  states.forEach(st => {
+    const g = document.getElementById(machine+'-'+st);
+    if (!g) return;
+    const rect = g.querySelector('rect');
+    const label = g.querySelector('text');
+    const on = st === status;
+    rect.setAttribute('fill', on ? tint(accent) : '#fff');
+    rect.setAttribute('stroke', on ? accent : '#D5DBDF');
+    rect.setAttribute('stroke-width', on ? '2' : '1.2');
+    label.setAttribute('fill', on ? accent : '#8A939B');
+    label.style.fontWeight = on ? '700' : '600';
+  });
+}
+function getCSS(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function tint(hex){
+  const h = hex.replace('#',''); const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  return `rgba(${r},${g},${b},0.10)`;
+}
+
+function flash(machine){
+  const svg = document.getElementById(machine==='obj'?'objSvg':'verSvg');
+  const accent = machine==='obj' ? getCSS('--obj-accent') : getCSS('--ver-accent');
+  svg.style.setProperty('--pc', accent);
+  svg.classList.remove('pulse'); void svg.offsetWidth; svg.classList.add('pulse');
+}
+
+function clearLog(){ S.log = []; render(); }
+
+/* toast */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* boot */
+S = initial();
+render();
+</script>
+</body>
+</html>
