@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wersjonowanie — makieta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --grey-900:#232936; --grey-800:#384350; --grey-700:#57616D; --grey-600:#6A7580;
+    --grey-500:#949EA6; --grey-400:#B5BDC3; --grey-300:#DBE0E3; --grey-200:#E9EDEE;
+    --grey-100:#F3F5F6; --grey-050:#F9FAFB; --white:#FFFFFF;
+    --mars:#FF5831; --green:#54CB0B; --green-700:#399903; --yellow:#FAB700;
+    --red:#F52922; --blue:#0B68FF;
+    --obj-accent:#FF5831; --ver-accent:#0B68FF;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --sh1:0 4px 12px rgba(35,41,54,.06);
+    --sh2:0 16px 32px rgba(35,41,54,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{font-family:var(--font);color:var(--grey-900);background:var(--grey-200);
+    -webkit-font-smoothing:antialiased;font-size:14px;line-height:1.4;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  button{font-family:inherit;cursor:pointer}
+  svg{display:block}
+  .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ============ OBJECT SWITCHER (prototyp) ============ */
+  .switcher{flex-shrink:0;height:46px;background:var(--grey-900);color:#fff;display:flex;align-items:center;gap:14px;padding:0 18px}
+  .switcher .sw-label{font-size:12px;font-weight:600;color:#cfd6dd;white-space:nowrap}
+  .seg{display:inline-flex;background:rgba(255,255,255,.09);border-radius:9px;padding:3px}
+  .seg button{border:none;background:transparent;color:#c3cbd3;font-family:inherit;font-size:12.5px;font-weight:500;padding:6px 14px;border-radius:7px;cursor:pointer;transition:.12s}
+  .seg button:hover:not(.on){color:#fff}
+  .seg button.on{background:#fff;color:var(--grey-900)}
+  .sw-desc{font-size:11.5px;color:#98a2ac}
+  @media(max-width:760px){ .sw-desc{display:none} .switcher .sw-label{display:none} }
+
+  /* ============ LAYOUT ============ */
+  .stage{display:flex;flex:1;min-height:0;overflow:hidden}
+  .app-col{flex:1;min-width:0;display:flex}
+  .inspector{flex:0 0 372px;background:#fff;border-left:1px solid var(--grey-300);
+    display:flex;flex-direction:column;overflow:auto}
+  .inspector.hidden{display:none}
+  .reopen{position:fixed;top:60px;right:0;z-index:60;background:var(--grey-900);color:#fff;border:none;
+    border-radius:10px 0 0 10px;padding:10px 12px;font-size:12px;font-weight:500;box-shadow:var(--sh2);display:none}
+  .reopen.show{display:block}
+  @media(max-width:1000px){
+    .stage{flex-direction:column;height:auto;overflow:visible}
+    .inspector{flex:none;border-left:none;border-top:1px solid var(--grey-300)}
+  }
+
+  /* ============ APP CHROME ============ */
+  .app{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--grey-100);overflow:hidden}
+
+  /* top navbar */
+  .navbar{height:48px;background:#fff;border-bottom:1px solid var(--grey-200);
+    display:flex;align-items:center;padding:0 14px;gap:14px;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px}
+  .wordmark{font-weight:700;font-size:15px;letter-spacing:.5px;color:var(--grey-900)}
+  .nb-gear{color:var(--grey-500);display:flex}
+  .nb-settings{font-size:13px;color:var(--grey-700);font-weight:450}
+  .nb-search{flex:1;max-width:440px;height:32px;border:1px solid var(--grey-200);background:var(--grey-050);
+    border-radius:8px;display:flex;align-items:center;padding:0 10px;gap:8px;color:var(--grey-500);font-size:13px}
+  .nb-search .kbd{margin-left:auto;display:flex;gap:4px}
+  .nb-search .kbd span{width:18px;height:18px;border:1px solid var(--grey-300);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--grey-500)}
+  .nb-right{display:flex;align-items:center;gap:16px;color:var(--grey-500)}
+  .nb-tz{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grey-600)}
+  .nb-user{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--grey-700);font-weight:500}
+  .nb-ava{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#FFB48F,var(--mars))}
+
+  .body-row{flex:1;display:flex;min-height:0}
+  /* left rail */
+  .rail{width:56px;background:#fff;border-right:1px solid var(--grey-200);flex-shrink:0;
+    display:flex;flex-direction:column;align-items:center;padding:14px 0}
+  .rail .r-ico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    color:var(--grey-500);margin-bottom:6px}
+  .rail .r-ico:hover{background:var(--grey-100)}
+  .rail .r-ico.active{color:var(--mars);background:#FFF1EC}
+  .rail .r-spacer{flex:1}
+
+  .content{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;position:relative}
+  .content-loader{position:absolute;top:72px;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;z-index:30;pointer-events:none}
+  .content-loader.show{display:flex}
+  .spinner{width:34px;height:34px;border:3px solid var(--grey-200);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* page header (object level) */
+  .page-header{background:#fff;border-bottom:1px solid var(--grey-200);flex-shrink:0}
+  .ph-row{height:72px;display:flex;align-items:center;padding:0 20px 0 22px;gap:0}
+  .ph-back{width:24px;height:24px;color:var(--grey-500);display:flex;align-items:center;justify-content:center}
+  .ph-sep{width:1px;height:28px;background:var(--grey-200);margin:0 18px}
+  .ph-ava{width:32px;height:32px;border-radius:8px;background:#FFF1EC;display:flex;align-items:center;
+    justify-content:center;margin-right:14px}
+  .ph-ava svg{width:18px;height:18px}
+  .ph-title{font-size:17px;font-weight:500;color:var(--grey-600);white-space:nowrap}
+  .ph-edit{color:var(--grey-400);margin:0 12px;display:flex}
+  .ph-spacer{flex:1}
+  .ph-live{font-size:12px;color:var(--grey-600);margin-right:14px;white-space:nowrap}
+  .ph-actions{display:flex;align-items:center;gap:8px}
+  /* new single-row header: version + object control groups */
+  .hdr-version{display:flex;align-items:center;gap:8px}
+  .hdr-object{display:flex;align-items:center;gap:8px}
+  .hdr-divider{width:1px;height:28px;background:var(--grey-200);margin:0 6px}
+  .ver-btn2{height:32px;padding:0 8px 0 12px;border:1px solid var(--grey-300);background:#fff;border-radius:8px;
+    font-size:13px;color:var(--grey-700);display:inline-flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;white-space:nowrap}
+  .ver-btn2:hover{background:var(--grey-050)}
+  .ver-tip{position:absolute;top:calc(100% + 8px);left:0;background:var(--grey-900);color:#fff;font-size:11px;
+    font-weight:500;padding:6px 9px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;
+    transition:opacity .12s;z-index:70;text-transform:capitalize}
+  .ver-tip::before{content:"";position:absolute;bottom:100%;left:14px;border:5px solid transparent;border-bottom-color:var(--grey-900)}
+  .ver-btn2:hover + .ver-tip{opacity:1}
+  .vbadge{height:20px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;
+    border:1px solid var(--grey-300);color:var(--grey-700);background:var(--grey-100);white-space:nowrap}
+  .vbadge.green{color:var(--green-700);border-color:#BEE6A3;background:#F0F9E9}
+  .vbadge.amber{color:#A9760A;border-color:#F3D98C;background:#FDF7E7}
+  .vbadge.grey{color:var(--grey-700);border-color:var(--grey-300);background:var(--grey-100)}
+
+  /* sub bar (version level) */
+  .subbar{height:52px;background:var(--grey-050);border-bottom:1px solid var(--grey-200);
+    display:flex;align-items:center;padding:0 20px 0 22px;gap:12px;flex-shrink:0}
+  .sb-alert{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--grey-600)}
+  .sb-alert .info{width:16px;height:16px;border-radius:50%;background:var(--grey-300);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-style:italic;flex-shrink:0}
+  .sb-spacer{flex:1}
+  .sb-updated{font-size:12px;color:var(--grey-500);white-space:nowrap}
+  .sb-actions{display:flex;align-items:center;gap:8px}
+
+  /* status pill */
+  .pill{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:11px;
+    font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;
+    border:1px solid var(--grey-300);color:var(--grey-600);background:var(--grey-050)}
+  .pill.green{color:var(--green-700);border-color:#BEE6A3;background:#F0F9E9}
+  .pill.amber{color:#A9760A;border-color:#F3D98C;background:#FDF7E7}
+  .pill.grey{color:var(--grey-600);border-color:var(--grey-300);background:var(--grey-100)}
+
+  /* buttons */
+  .btn{height:32px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid transparent;
+    display:inline-flex;align-items:center;gap:7px;line-height:1;white-space:nowrap;transition:background .12s,border-color .12s}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:#fff;border-color:var(--grey-300);color:var(--grey-800)}
+  .btn.ghost:hover:not(:disabled){background:var(--grey-050);border-color:var(--grey-400)}
+  .btn.text{background:transparent;color:var(--grey-800);padding:0 10px}
+  .btn.text:hover:not(:disabled){background:var(--grey-100)}
+  .btn.blue{background:var(--blue);color:#fff}
+  .btn.blue:hover:not(:disabled){background:#0a5ce0}
+  .btn.green{background:var(--green);color:#fff}
+  .btn.green:hover:not(:disabled){background:#4bb808}
+  .btn.yellow{background:var(--yellow);color:var(--grey-900)}
+  .btn.yellow:hover:not(:disabled){background:#eaab00}
+  .btn.red{background:var(--red);color:#fff}
+  .btn.red:hover:not(:disabled){background:#dc231d}
+  .btn.icon{width:32px;padding:0;justify-content:center}
+  .btn .dd{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.9}
+  .btn .cv{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* version picker */
+  .ver-picker{position:relative}
+  .ver-btn{height:32px;padding:0 10px;border:1px solid var(--grey-300);background:#fff;border-radius:8px;
+    font-size:13px;color:var(--grey-800);display:inline-flex;align-items:center;gap:8px;font-weight:500}
+  .ver-btn:hover{background:var(--grey-050)}
+  .ver-btn .vdot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+
+  /* dropdown menus */
+  .menu{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--grey-200);
+    border-radius:12px;box-shadow:var(--sh2);padding:6px;min-width:184px;z-index:50}
+  .menu .m-item{padding:9px 10px;border-radius:8px;font-size:13px;color:var(--grey-800);cursor:pointer}
+  .menu .m-item:hover{background:var(--grey-100)}
+
+  .ver-menu{min-width:320px;padding:8px}
+  .ver-search{height:36px;border:1px solid var(--grey-200);background:var(--grey-050);border-radius:8px;
+    display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--grey-500);font-size:13px;margin-bottom:6px}
+  .ver-search input{border:none;background:none;outline:none;font-family:inherit;font-size:13px;color:var(--grey-800);width:100%}
+  .vrow{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 10px;border-radius:8px;cursor:pointer}
+  .vrow:hover{background:var(--grey-100)}
+  .vrow.current{background:#EEF4FF}
+  .vrow .vmeta{min-width:0}
+  .vrow .vname{font-size:13px;font-weight:500;color:var(--grey-900)}
+  .vrow .vdate{font-size:11px;color:var(--grey-500);margin-top:1px}
+  .vrow .vinfo{position:absolute;right:calc(100% + 10px);top:-6px;width:230px;background:#fff;
+    border:1px solid var(--grey-200);border-radius:12px;box-shadow:var(--sh2);padding:14px;display:none;z-index:60}
+  .vrow:hover .vinfo{display:block}
+  .vinfo .vi-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .vinfo .vi-ico{width:26px;height:26px;border-radius:7px;background:var(--grey-100);display:flex;
+    align-items:center;justify-content:center;color:var(--grey-500)}
+  .vinfo .vi-name{font-size:13px;font-weight:600}
+  .vinfo .vi-uuid{font-size:10px;color:var(--grey-500);font-family:ui-monospace,Menlo,monospace;word-break:break-all;margin-bottom:8px}
+  .vinfo .vi-line{font-size:11px;color:var(--grey-600);margin-top:3px}
+  .vinfo .vi-line b{color:var(--grey-800);font-weight:600}
+  .vdivider{height:1px;background:var(--grey-200);margin:6px 4px}
+  .vsection{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--grey-500);padding:8px 10px 4px}
+
+  /* ============ CANVAS / FORM (poglądowy) ============ */
+  .canvas{flex:1;overflow:auto;padding:28px 24px 48px;transition:opacity .22s ease}
+  .canvas.switching{opacity:0}
+
+  /* ===== FLOW EDITOR VIEW (Obiekt B) ===== */
+  .view-flow{pointer-events:none}
+  .flow-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+  .tb-side{display:flex;align-items:center;gap:10px}
+  .tb-group{display:inline-flex;align-items:center;gap:2px;background:#fff;border:1px solid var(--grey-200);
+    border-radius:10px;box-shadow:var(--sh1);padding:4px}
+  .tb-btn{width:34px;height:34px;border:none;background:transparent;border-radius:8px;color:var(--grey-600);
+    display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:500}
+  .tb-btn .ic{width:18px;height:18px}
+  .tb-zoom{font-size:13px;font-weight:600;color:var(--grey-800);padding:0 6px;min-width:52px;text-align:center}
+  .tb-text{padding:0 14px;height:42px;font-size:14px;font-weight:600;color:var(--grey-800);gap:8px}
+  .tb-add{padding:0 16px;height:42px;font-size:14px;font-weight:600;color:var(--blue);gap:8px}
+
+  .flow-canvas{position:relative;width:1480px;height:540px;margin:0 auto}
+  .flow-edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .edge-label{position:absolute;font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--grey-500);
+    background:var(--grey-100);padding:2px 6px;border-radius:5px}
+  .fnode{position:absolute;background:#fff;border:1px solid var(--grey-200);border-radius:16px;box-shadow:0 8px 20px rgba(35,41,54,.09)}
+  .fn-head{display:flex;align-items:center;gap:12px;padding:16px 16px 14px}
+  .fn-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .fn-ico svg{width:21px;height:21px}
+  .fn-ico.teal{background:#45C4B0} .fn-ico.purple{background:#6C4EF0} .fn-ico.teams{background:#5B5FC7}
+  .fn-ico.softteal{background:#E7F5F2}
+  .fn-title{font-size:15px;font-weight:600;color:var(--grey-900)}
+  .fn-sub{padding:13px 18px;border-top:1px solid var(--grey-100);font-size:13.5px;color:var(--grey-700)}
+  .fn-desc{padding:13px 18px;border-top:1px solid var(--grey-100);font-size:13px;color:var(--grey-500);line-height:1.45}
+  .fn-stat{padding:13px 18px 6px;border-top:1px solid var(--grey-100);display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--grey-600)}
+  .fn-stat b{color:var(--grey-900);font-weight:600}
+  .fn-i{width:16px;height:16px;border-radius:50%;background:var(--grey-300);color:#fff;font-size:10px;font-style:italic;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .fn-spark{padding:0 18px 16px}
+  .fn-spark svg{width:100%;height:22px;display:block}
+  .fhandle{position:absolute;right:-12px;width:23px;height:23px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:11px;font-weight:700}
+  .fhandle.check{background:var(--grey-800);color:#fff}
+  .fhandle.x{background:#fff;color:var(--grey-400);border:1px solid var(--grey-300)}
+  .canvas-inner{max-width:1080px;margin:0 auto;pointer-events:none;position:relative}
+  .oos-chip{position:absolute;right:0;top:-16px;font-size:11px;color:var(--grey-500);
+    background:var(--grey-100);border:1px solid var(--grey-200);border-radius:6px;padding:3px 8px}
+  .card{background:#fff;border:1px solid var(--grey-200);border-radius:14px;box-shadow:var(--sh1);margin-bottom:16px;overflow:hidden}
+  .card-head{display:flex;align-items:flex-start;gap:14px;padding:20px 24px}
+  .chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--grey-300);flex-shrink:0;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;color:var(--grey-400)}
+  .card-head .ch-txt{flex:1;min-width:0}
+  .card-head .ch-h{font-size:15px;font-weight:600;color:var(--grey-900);display:flex;align-items:center;gap:10px}
+  .card-head .ch-s{font-size:12.5px;color:var(--grey-500);margin-top:3px}
+  .card-head .ch-btns{display:flex;gap:8px}
+  .opt-tag{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--grey-500);background:var(--grey-100);
+    border-radius:5px;padding:2px 7px;text-transform:uppercase}
+  .card-body{padding:0 24px 28px}
+  .form{max-width:588px;margin:6px auto 0}
+  .fg{margin-bottom:20px}
+  .fg .lbl{font-size:13px;font-weight:500;color:var(--grey-800);margin-bottom:7px;display:block}
+  .fg .hlp{font-size:12px;color:var(--grey-500);margin-top:7px}
+  .inp{height:40px;border:1px solid var(--grey-300);border-radius:8px;background:#fff;padding:0 12px;
+    display:flex;align-items:center;color:var(--grey-500);font-size:14px}
+  .inp.sel{justify-content:space-between}
+  .inp.sel svg{width:16px;height:16px;color:var(--grey-400)}
+  .drop{border:1px dashed var(--grey-300);border-radius:8px;height:46px;display:flex;align-items:center;
+    justify-content:center;gap:8px;color:var(--grey-500);font-size:13px;background:var(--grey-050)}
+  .conn{border:1px solid var(--grey-200);border-radius:10px;padding:14px 16px}
+  .conn .c-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .conn .c-sel{font-size:13px;color:var(--grey-700)}
+  .conn .c-sel b{color:var(--grey-900)}
+  .conn .c-change{font-size:13px;color:var(--blue);font-weight:500;display:flex;align-items:center;gap:6px}
+  .conn .c-item{font-size:13px;color:var(--grey-700);padding:5px 0}
+
+  /* ============ MODALS ============ */
+  .overlay{position:fixed;inset:0;background:rgba(35,41,54,.42);display:flex;align-items:center;justify-content:center;
+    z-index:120;padding:20px}
+  .modal{background:#fff;border-radius:16px;width:520px;max-width:100%;box-shadow:var(--sh2);overflow:hidden}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid var(--grey-100)}
+  .modal-head h3{margin:0;font-size:18px;font-weight:600}
+  .modal-head .x{border:none;background:none;color:var(--grey-500);display:flex;padding:4px}
+  .modal-body{padding:22px 24px}
+  .modal-body .lbl{display:block;font-size:13px;font-weight:600;color:var(--grey-800);margin:0 0 8px}
+  .modal-body .fld{width:100%;height:40px;border:1px solid var(--grey-300);border-radius:8px;padding:0 12px;
+    font-size:14px;font-family:inherit;color:var(--grey-900);margin-bottom:18px;outline:none}
+  .modal-body .fld:focus{border-color:var(--blue)}
+  .modal-body textarea.fld{height:96px;padding:10px 12px;resize:none;line-height:1.45}
+  .modal-body .hint{font-size:12.5px;color:var(--grey-500);margin-bottom:16px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--grey-050);border-top:1px solid var(--grey-100)}
+  .warn-body{padding:36px 44px 12px;text-align:center}
+  .warn-ico{width:76px;height:76px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;color:var(--grey-600)}
+  .warn-body h3{margin:0 0 10px;font-size:21px;font-weight:600;letter-spacing:-.2px}
+  .warn-body p{margin:0;color:var(--grey-500);font-size:13.5px}
+
+  /* ============ INSPECTOR (narzędzie prototypu) ============ */
+  .insp-head{padding:16px 18px;border-bottom:1px solid var(--grey-200);display:flex;align-items:flex-start;gap:10px}
+  .insp-head .ih-txt{flex:1}
+  .insp-head h2{margin:0 0 3px;font-size:13px;font-weight:700;letter-spacing:.2px;color:var(--grey-900)}
+  .insp-head p{margin:0;font-size:11px;color:var(--grey-500);line-height:1.45}
+  .insp-head .ih-btns{display:flex;gap:6px}
+  .ih-btn{border:1px solid var(--grey-300);background:#fff;border-radius:7px;padding:5px 8px;font-size:11px;
+    color:var(--grey-700);font-weight:500}
+  .ih-btn:hover{background:var(--grey-100)}
+  .machines{display:flex;padding:8px 10px 0}
+  .machine{flex:1;padding:8px 6px}
+  .machine h4{margin:0 0 1px;font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    display:flex;align-items:center;gap:6px}
+  .machine.obj h4{color:var(--obj-accent)} .machine.ver h4{color:var(--ver-accent)}
+  .machine .who{font-size:9.5px;color:var(--grey-500);margin:0 0 4px}
+  .machine svg.mm{width:100%;height:auto}
+  .m-label{font-size:11px;font-weight:600;fill:var(--grey-500)}
+  .m-edge-label{font-size:8.5px;fill:var(--grey-500)}
+  .pulse{animation:pulse .8s ease}
+  @keyframes pulse{0%{filter:drop-shadow(0 0 0 transparent)}35%{filter:drop-shadow(0 0 9px var(--pc))}100%{filter:drop-shadow(0 0 0 transparent)}}
+  .legend{display:flex;gap:16px;padding:2px 18px 10px;font-size:11px;color:var(--grey-600)}
+  .legend .k{display:flex;align-items:center;gap:6px}
+  .legend .sw{width:11px;height:11px;border-radius:4px}
+  .sw.obj{background:var(--obj-accent)} .sw.ver{background:var(--ver-accent)}
+  .insp-note{margin:0 18px 12px;font-size:11px;line-height:1.5;color:var(--grey-700);background:var(--grey-050);
+    border:1px solid var(--grey-200);border-radius:10px;padding:10px 12px}
+  .insp-note b{color:var(--grey-900)}
+  .log-wrap{border-top:1px solid var(--grey-200);padding:14px 18px 20px;margin-top:auto}
+  .log-wrap h3{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--grey-600);
+    text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+  .log-wrap .clr{font-size:11px;font-weight:500;color:var(--grey-500);cursor:pointer;text-transform:none;letter-spacing:0}
+  .log{display:flex;flex-direction:column;gap:7px;max-height:200px;overflow:auto}
+  .log-item{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--grey-800);line-height:1.4}
+  .log-item .lt{font-size:9px;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:5px;flex-shrink:0;
+    color:#fff;text-transform:uppercase;margin-top:1px}
+  .log-item .lt.obj{background:var(--obj-accent)} .log-item .lt.ver{background:var(--ver-accent)}
+  .log-empty{font-size:12px;color:var(--grey-400);font-style:italic}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--grey-900);
+    color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:var(--sh2);opacity:0;pointer-events:none;
+    transition:.3s;z-index:200;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="switcher">
+  <span class="sw-label">Makieta — obiekt:</span>
+  <div class="seg" id="seg">
+    <button data-o="A" onclick="switchObject('A')">Obiekt A</button>
+    <button data-o="B" onclick="switchObject('B')">Obiekt B</button>
+    <button data-o="C" onclick="switchObject('C')">Obiekt C</button>
+  </div>
+  <span class="sw-desc" id="swDesc"></span>
+</div>
+<div class="stage">
+  <!-- ================= APP ================= -->
+  <div class="app-col">
+    <div class="app">
+      <!-- top navbar -->
+      <div class="navbar">
+        <div class="brand">
+          <span class="wordmark">synerise</span>
+          <span class="nb-gear"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+          <span class="nb-settings">Settings</span>
+        </div>
+        <div class="nb-search">
+          <svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          Search objects, actions, modules
+          <span class="kbd"><span>⌘</span><span>K</span></span>
+        </div>
+        <div class="nb-right">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="nb-tz"><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>07:02 (UTC-3)</span>
+          <span class="nb-user"><span class="nb-ava"></span>Synerise (324) ▾</span>
+        </div>
+      </div>
+
+      <div class="body-row">
+        <!-- left rail -->
+        <div class="rail">
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
+          <div class="r-ico active"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11 15.7 7M8.3 13l7.4 4"/></svg></div>
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 4-6"/></svg></div>
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></div>
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/></svg></div>
+          <div class="r-spacer"></div>
+          <div class="r-ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 0-.33-1.82"/></svg></div>
+        </div>
+
+        <div class="content">
+          <!-- PAGE HEADER: single row (object + version controls) -->
+          <div class="page-header">
+            <div class="ph-row">
+              <span class="ph-back"><svg class="ic" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span>
+              <span class="ph-sep"></span>
+              <span class="ph-ava"><svg viewBox="0 0 24 24" fill="none" stroke="#FF5831" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="6" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M8.1 11 15.9 6.9M8.1 13l7.8 4.1"/></svg></span>
+              <span class="ph-title" id="objTitle">Object A</span>
+              <span class="ph-edit"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+              <span id="objPill"></span>
+              <span class="ph-spacer"></span>
+              <div class="hdr-version" id="verGroup"></div>
+              <div class="hdr-object" id="objGroup"></div>
+            </div>
+          </div>
+
+          <div class="content-loader" id="cLoader"><div class="spinner"></div></div>
+          <!-- CANVAS: form (poglądowy, nieklikalny) -->
+          <div class="canvas">
+            <div class="canvas-inner" id="viewForm">
+              <span class="oos-chip">Formularz — poglądowy (poza zakresem)</span>
+              <div class="card">
+                <div class="card-head">
+                  <span class="chk"><svg class="ic" style="width:13px;height:13px;stroke-width:2.4" viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>
+                  <div class="ch-txt">
+                    <div class="ch-h">General settings</div>
+                    <div class="ch-s">Define details of request and target event</div>
+                  </div>
+                  <div class="ch-btns">
+                    <button class="btn ghost">Change</button>
+                    <button class="btn green">Apply</button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="form">
+                    <div class="fg">
+                      <span class="lbl">Integration title</span>
+                      <div class="inp">Type title</div>
+                      <div class="hlp">Name that will be seen in application</div>
+                    </div>
+                    <div class="fg">
+                      <span class="lbl">Group</span>
+                      <div class="inp sel">Choose group <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+                    </div>
+                    <div class="fg">
+                      <span class="lbl">Integration icon</span>
+                      <div class="drop"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Upload a new file or drop one here</div>
+                      <div class="hlp">Accepted icon formats: .svg, .jpg, .png</div>
+                    </div>
+                    <div class="fg">
+                      <span class="lbl">Supported connection types</span>
+                      <div class="conn">
+                        <div class="c-top">
+                          <span class="c-sel">Selected: <b>2</b></span>
+                          <span class="c-change"><svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Change selection</span>
+                        </div>
+                        <div class="c-item">OAuth2 Client Credentials</div>
+                        <div class="c-item">SHA256-based authentication</div>
+                      </div>
+                    </div>
+                    <div class="fg" style="margin-bottom:0">
+                      <span class="lbl">Event name</span>
+                      <div class="inp sel">Choose event <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+                      <div class="hlp">Data from response will be kept as chosen event</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <span class="chk"><svg class="ic" style="width:13px;height:13px;stroke-width:2.4" viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>
+                  <div class="ch-txt"><div class="ch-h">Request</div><div class="ch-s">Define details of request and target event</div></div>
+                  <div class="ch-btns"><button class="btn ghost">Define</button></div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <span class="chk"><svg class="ic" style="width:13px;height:13px;stroke-width:2.4" viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>
+                  <div class="ch-txt"><div class="ch-h">Response customization <span class="opt-tag">optional</span></div><div class="ch-s">Define details of request and target event</div></div>
+                  <div class="ch-btns"><button class="btn ghost">Change</button></div>
+                </div>
+              </div>
+            </div>
+            <!-- FLOW EDITOR VIEW (Obiekt B) -->
+            <div class="view-flow" id="viewFlow" style="display:none">
+              <div class="flow-toolbar">
+                <div class="tb-side">
+                  <div class="tb-group">
+                    <button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a4 4 0 0 1 0 8h-2"/></svg></button>
+                    <button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a4 4 0 0 0 0 8h2"/></svg></button>
+                  </div>
+                  <div class="tb-group">
+                    <button class="tb-btn">−</button><span class="tb-zoom">76 %</span><button class="tb-btn">+</button>
+                  </div>
+                  <div class="tb-group"><button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button></div>
+                  <div class="tb-group"><button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M6 8.5v7"/><circle cx="18" cy="12" r="2.5"/><path d="M8.5 6H13a3 3 0 0 1 3 3v.5"/></svg></button></div>
+                </div>
+                <div class="tb-side">
+                  <div class="tb-group">
+                    <button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8 8.4 8.4 0 0 1-4-1L3 20l1.5-4.5a8.4 8.4 0 0 1-1-4 8.4 8.4 0 0 1 8-8 8.4 8.4 0 0 1 9 8z"/></svg></button>
+                    <button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+                  </div>
+                  <div class="tb-group"><button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></button></div>
+                  <div class="tb-group tb-text">Lifetime <svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+                  <div class="tb-group tb-text"><svg class="ic" style="width:16px;height:16px" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Scheduler rules</div>
+                  <div class="tb-group"><button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/></svg></button></div>
+                  <div class="tb-group"><button class="tb-btn"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button></div>
+                  <div class="tb-group tb-add"><svg class="ic" style="width:18px;height:18px;stroke:var(--blue)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg> Add node</div>
+                </div>
+              </div>
+
+              <div class="flow-canvas">
+                <span class="oos-chip" style="left:0;right:auto">Workflow — poglądowy (poza zakresem)</span>
+                <svg class="flow-edges" viewBox="0 0 1480 560" preserveAspectRatio="xMinYMin meet">
+                  <defs><marker id="fa" markerWidth="8" markerHeight="8" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#AEB6BD"/></marker></defs>
+                  <g fill="none" stroke="#C2C9CF" stroke-width="1.6" stroke-dasharray="5 4">
+                    <path d="M232,310 H312" marker-end="url(#fa)"/>
+                    <path d="M524,300 H584 V160 H632" marker-end="url(#fa)"/>
+                    <path d="M524,340 H584 V420 H632" marker-end="url(#fa)"/>
+                    <path d="M868,160 H924 V310 H968" marker-end="url(#fa)"/>
+                    <path d="M868,420 H924 V310 H968" marker-end="url(#fa)"/>
+                    <path d="M1204,310 H1264" marker-end="url(#fa)"/>
+                  </g>
+                </svg>
+
+                <span class="edge-label" style="left:548px;top:250px">MATCHED</span>
+                <span class="edge-label" style="left:540px;top:400px">NOT MATCHED</span>
+
+                <div class="fnode" style="left:24px;top:235px;width:208px">
+                  <div class="fn-head"><span class="fn-ico teal"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span class="fn-title">Profile Event</span></div>
+                  <div class="fn-sub">Polish</div>
+                  <div class="fn-stat"><span>Executed <b>9</b></span><span class="fn-i">i</span></div>
+                  <div class="fn-spark"><svg viewBox="0 0 160 22" preserveAspectRatio="none"><polyline points="0,18 62,18 72,5 104,5 114,18 160,18" fill="none" stroke="#0B68FF" stroke-width="1.6"/></svg></div>
+                </div>
+
+                <div class="fnode" style="left:316px;top:235px;width:208px">
+                  <div class="fn-head"><span class="fn-ico purple"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span class="fn-title">Event Filter</span></div>
+                  <div class="fn-sub">bookingPolish</div>
+                  <div class="fn-stat"><span>Entered <b>9</b></span><span class="fn-i">i</span></div>
+                  <div class="fn-spark"><svg viewBox="0 0 160 22" preserveAspectRatio="none"><polyline points="0,18 62,18 72,5 104,5 114,18 160,18" fill="none" stroke="#0B68FF" stroke-width="1.6"/></svg></div>
+                  <span class="fhandle check" style="top:52px">✓</span>
+                  <span class="fhandle x" style="top:92px">✕</span>
+                </div>
+
+                <div class="fnode" style="left:636px;top:70px;width:232px">
+                  <div class="fn-head"><span class="fn-ico teams"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg></span><span class="fn-title">Send channel m…</span></div>
+                  <div class="fn-sub">Booked meeting PL</div>
+                  <div class="fn-stat"><span>Executed <b>3</b></span><span class="fn-i">i</span></div>
+                  <div class="fn-spark"><svg viewBox="0 0 200 22" preserveAspectRatio="none"><polyline points="0,18 78,18 88,7 120,7 130,18 200,18" fill="none" stroke="#0B68FF" stroke-width="1.6"/></svg></div>
+                </div>
+
+                <div class="fnode" style="left:636px;top:330px;width:232px">
+                  <div class="fn-head"><span class="fn-ico teams"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg></span><span class="fn-title">Send channel m…</span></div>
+                  <div class="fn-sub">No booking PL</div>
+                  <div class="fn-stat"><span>Executed <b>6</b></span><span class="fn-i">i</span></div>
+                  <div class="fn-spark"><svg viewBox="0 0 200 22" preserveAspectRatio="none"><polyline points="0,18 78,18 88,7 120,7 130,18 200,18" fill="none" stroke="#0B68FF" stroke-width="1.6"/></svg></div>
+                </div>
+
+                <div class="fnode" style="left:972px;top:243px;width:232px">
+                  <div class="fn-head"><span class="fn-ico softteal"><svg viewBox="0 0 24 24" fill="none" stroke="#3BAE9B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><path d="M6 8.3v7.4"/><circle cx="18" cy="12" r="2.3"/><path d="M8.3 6H13a3 3 0 0 1 3 3v.7M8.3 18H13a3 3 0 0 0 3-3v-.7"/></svg></span><span class="fn-title">Merge Paths</span></div>
+                  <div class="fn-desc">It combines separate paths into one and limits…</div>
+                </div>
+
+                <div class="fnode" style="left:1268px;top:235px;width:190px">
+                  <div class="fn-head"><span class="fn-ico softteal"><svg viewBox="0 0 24 24" fill="none" stroke="#3BAE9B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="3"/></svg></span><span class="fn-title">End</span></div>
+                  <div class="fn-desc">It finishes a workflow</div>
+                  <div class="fn-stat"><span>Entered <b>9</b></span><span class="fn-i">i</span></div>
+                  <div class="fn-spark"><svg viewBox="0 0 160 22" preserveAspectRatio="none"><polyline points="0,18 62,18 72,5 104,5 114,18 160,18" fill="none" stroke="#0B68FF" stroke-width="1.6"/></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="modalMount"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== STATE =====
+   Version flow (IDENTICAL for every object): UNPUBLISHED | PUBLISHED | ARCHIVED
+   Object flow differs per object type:
+     A – no object status (no Activate / Pause / Stop)
+     B – DRAFT → ACTIVE ⇄ INACTIVE (Activate / Pause / Stop)
+     C – DRAFT ⇄ ACTIVE (Activate / Deactivate) */
+let uid = 1;
+const OBJ_CFG = {
+  A: { name:'Object A', hasStatus:false },
+  B: { name:'Object B', hasStatus:true, statuses:['DRAFT','ACTIVE','INACTIVE'] },
+  C: { name:'Object C', hasStatus:true, statuses:['DRAFT','ACTIVE'] }
+};
+function freshObject(type){
+  const id = uid++;
+  return {
+    type,
+    object: OBJ_CFG[type].hasStatus ? 'DRAFT' : null,
+    versions: [ { id, name:'v1', status:'UNPUBLISHED', updated:'12 Aug 2023 14:23',
+                  uuid:'f0dd8cff-af5e-3bb2-9e31-5a33d6fa9c87', author:'Mike Smith', published:'—' } ],
+    currentId: id,
+    log: []
+  };
+}
+let OBJS, currentObj, S;
+function initAll(){ uid=1; OBJS={A:freshObject('A'),B:freshObject('B'),C:freshObject('C')}; currentObj='A'; S=OBJS.A; }
+function switchObject(type){ currentObj=type; S=OBJS[type]; closeAllMenus(); render(); toast('Przełączono na '+OBJ_CFG[type].name); }
+function resetAll(){ initAll(); render(); toast('Prototyp zresetowany'); }
+
+const cur = () => S.versions.find(v => v.id === S.currentId);
+const published = () => S.versions.find(v => v.status === 'PUBLISHED');
+const draft = () => S.versions.find(v => v.status === 'UNPUBLISHED');
+const now = () => '12 Aug 2023 14:23';
+const fakeUuid = () => 'a'+Math.random().toString(16).slice(2,10)+'-af5e-3bb2-9e31-'+Math.random().toString(16).slice(2,14);
+function pushLog(kind, text){ S.log.unshift({kind,text}); if(S.log.length>30) S.log.pop(); }
+
+/* ---- VERSION flow (only version machine) ---- */
+function saveDraft(){ const v=cur(); v.updated=now();
+  pushLog('ver','Zapisano wersję „'+v.name+'" — status bez zmian (UNPUBLISHED)'); render(); flash('ver'); toast('Zapisano wersję roboczą'); }
+
+function openPublish(){ showPublishModal(cur()); }
+
+function doPublish(name){
+  const v=cur(); const prev=published();
+  if(prev && prev.id!==v.id) prev.status='ARCHIVED';
+  v.status='PUBLISHED'; v.name=name||v.name; v.updated=now(); v.published='just now';
+  pushLog('ver','Opublikowano „'+v.name+'"'+(prev?' — poprzednia wersja → ARCHIVED':''));
+  closeModal(); render(); flash('ver'); toast('Wersja opublikowana');
+}
+
+function editAsDraft(){
+  const src=cur(); const ex=draft();
+  if(ex && ex.id!==src.id){ showOverrideModal(()=>transition(()=>copyToDraft(src,'PUBLISHED'))); return; }
+  transition(()=>copyToDraft(src,'PUBLISHED'));
+}
+function restoreAsDraft(){
+  const src=cur(); closeAllMenus(); const ex=draft();
+  if(ex){ showOverrideModal(()=>copyToDraft(src,'ARCHIVED')); return; }
+  copyToDraft(src,'ARCHIVED');
+}
+function copyToDraft(src, from){
+  S.versions = S.versions.filter(v=>v.status!=='UNPUBLISHED');
+  const nv={ id:uid++, name:nextVersionName(), status:'UNPUBLISHED', updated:now(), uuid:fakeUuid(), author:'Mike Smith', published:'—', from:src.name };
+  S.versions.unshift(nv); S.currentId=nv.id;
+  pushLog('ver',(from==='ARCHIVED'?'Przywrócono':'Utworzono')+' wersję na bazie „'+src.name+'" → nowa UNPUBLISHED');
+  closeModal(); render(); flash('ver'); toast('Utworzono nową wersję roboczą');
+}
+
+function restoreAndPublish(){ const src=cur(); closeAllMenus(); showRestorePublishModal(src); }
+function confirmRestorePublish(srcId){
+  const name=document.getElementById('rpName').value.trim();
+  const src=S.versions.find(v=>v.id===srcId); const prev=published();
+  if(prev && prev.id!==src.id) prev.status='ARCHIVED';
+  const nv={ id:uid++, name:name||nextVersionName(), status:'PUBLISHED', updated:now(), uuid:fakeUuid(), author:'Mike Smith', published:'just now', from:src.name };
+  S.versions.unshift(nv); S.currentId=nv.id;
+  pushLog('ver','Przywrócono „'+src.name+'" jako nową wersję „'+nv.name+'" → PUBLISHED'+(prev?' (poprzednia live → ARCHIVED)':''));
+  closeModal(); render(); flash('ver'); toast('Utworzono nową opublikowaną wersję z „'+src.name+'"');
+}
+
+function transition(commit){
+  closeModal();
+  const canvas=document.querySelector('.canvas'); const loader=document.getElementById('cLoader');
+  canvas.classList.add('switching'); loader.classList.add('show');
+  setTimeout(()=>{
+    commit();
+    canvas.classList.add('switching');           // keep hidden until next frame
+    requestAnimationFrame(()=>{ canvas.classList.remove('switching'); loader.classList.remove('show'); });
+  }, 480);
+}
+function selectVersion(id){
+  closeAllMenus();
+  if(id===S.currentId) return;
+  transition(()=>{ S.currentId=id; render(); });
+}
+function nextVersionName(){ let max=1; S.versions.forEach(v=>{const m=/^v(\d+)$/.exec(v.name); if(m) max=Math.max(max,+m[1]);}); return 'v'+(max+1); }
+
+/* ---- OBJECT flow (only object machine) ---- */
+function activateObject(){
+  if(!published()){                       // brak opublikowanej wersji → modal
+    showActivateModal(draft() || cur());
+    return;
+  }
+  S.object='ACTIVE'; pushLog('obj','Aktywacja obiektu → ACTIVE (status wersji bez zmian)'); render(); flash('obj'); toast('Obiekt aktywny');
+}
+function showActivateModal(v){
+  document.getElementById('modalMount').innerHTML = `
+   <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+     <div class="modal-head" style="border:none;padding-bottom:0"><span></span><button class="x" onclick="closeModal()"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+     <div class="warn-body" style="padding-bottom:6px">
+       <div class="warn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:72px;height:72px"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/><circle cx="15" cy="9" r="1.8"/></svg></div>
+       <h3>Activate integration?</h3>
+       <p>Aby aktywować, musisz opublikować istniejącą wersję.</p>
+     </div>
+     <div class="modal-body" style="padding-top:8px">
+       <label class="lbl" style="font-size:13px">Current version</label>
+       <div style="border:1px solid var(--grey-200);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+         <div><div style="font-size:14px;font-weight:600;color:var(--grey-900)">${v.name}</div><div style="font-size:12px;color:var(--grey-500);margin-top:2px">${v.updated}</div></div>
+         ${pill(v.status)}
+       </div>
+     </div>
+     <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">No, cancel</button><button class="btn green" onclick="confirmActivatePublish(${v.id})">Yes, publish &amp; activate</button></div>
+   </div></div>`;
+}
+function confirmActivatePublish(vId){
+  const v=S.versions.find(x=>x.id===vId); const prev=published();
+  if(prev && prev.id!==v.id) prev.status='ARCHIVED';
+  v.status='PUBLISHED'; v.updated=now(); v.published='just now';
+  S.object='ACTIVE';
+  pushLog('ver','Opublikowano „'+v.name+'" → PUBLISHED');
+  pushLog('obj','Aktywacja obiektu → ACTIVE (po publikacji wersji)');
+  closeModal(); render(); flash('ver'); flash('obj'); toast('Wersja opublikowana, obiekt aktywny');
+}
+function pauseObject(){ S.object='INACTIVE'; pushLog('obj','Pauza obiektu → INACTIVE (status wersji bez zmian)'); render(); flash('obj'); toast('Obiekt wstrzymany'); }
+function stopObject(){ S.object='INACTIVE'; pushLog('obj','Zatrzymanie obiektu → INACTIVE (status wersji bez zmian)'); render(); flash('obj'); toast('Obiekt zatrzymany'); }
+function deactivateObject(){ S.object='DRAFT'; pushLog('obj','Deaktywacja obiektu → DRAFT (status wersji bez zmian)'); render(); flash('obj'); toast('Obiekt zdezaktywowany'); }
+
+/* ---- MODALS ---- */
+function showPublishModal(v){
+  const suggested = /^v\d+$/.test(v.name)?v.name:nextVersionName();
+  document.getElementById('modalMount').innerHTML = `
+   <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+     <div class="modal-head"><h3>Publish version</h3><button class="x" onclick="closeModal()"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+     <div class="modal-body">
+       <label class="lbl">Name</label><input class="fld" id="pubName" value="${suggested}"/>
+       <label class="lbl">Describe changes</label><textarea class="fld" id="pubDesc" placeholder="What changed in this version?" style="margin-bottom:4px"></textarea>
+     </div>
+     <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn blue" onclick="confirmPublish()">Publish</button></div>
+   </div></div>`;
+}
+function confirmPublish(){ doPublish(document.getElementById('pubName').value.trim()); }
+
+function showRestorePublishModal(src){
+  const suggested = nextVersionName();
+  document.getElementById('modalMount').innerHTML = `
+   <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+     <div class="modal-head"><h3>Restore and publish</h3><button class="x" onclick="closeModal()"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+     <div class="modal-body">
+       <div class="hint">Na podstawie „${src.name}" powstanie nowa, opublikowana wersja. „${src.name}" pozostaje archiwalna.</div>
+       <label class="lbl">Name</label><input class="fld" id="rpName" value="${suggested}"/>
+       <label class="lbl">Describe changes</label><textarea class="fld" id="rpDesc" placeholder="What changed in this version?" style="margin-bottom:4px"></textarea>
+     </div>
+     <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn blue" onclick="confirmRestorePublish(${src.id})">Restore and publish</button></div>
+   </div></div>`;
+}
+
+function showOverrideModal(cb){
+  window.__ov=cb;
+  document.getElementById('modalMount').innerHTML = `
+   <div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+     <div class="modal-head" style="border:none;padding-bottom:0"><span></span><button class="x" onclick="closeModal()"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+     <div class="warn-body">
+       <div class="warn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:76px;height:76px"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
+       <h3>Override draft?</h3>
+       <p>Istnieje już niepublikowana wersja (UNPUBLISHED) tego obiektu. Kontynuując, nadpiszesz ją.</p>
+     </div>
+     <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">No, cancel</button><button class="btn yellow" onclick="confirmOverride()">Yes, override</button></div>
+   </div></div>`;
+}
+function confirmOverride(){ const cb=window.__ov; closeModal(); if(cb) cb(); }
+function closeModal(){ document.getElementById('modalMount').innerHTML=''; }
+
+/* ---- MENUS ---- */
+function toggleMenu(id,ev){ ev&&ev.stopPropagation(); const el=document.getElementById(id); const open=el.style.display==='block'; closeAllMenus(); el.style.display=open?'none':'block'; }
+function closeAllMenus(){ document.querySelectorAll('.menu').forEach(m=>m.style.display='none'); }
+document.addEventListener('click', closeAllMenus);
+
+/* ---- INSPECTOR toggle ---- */
+/* ---- RENDER ---- */
+const pillClass = { DRAFT:'grey', UNPUBLISHED:'grey', ACTIVE:'green', INACTIVE:'grey', PUBLISHED:'green', ARCHIVED:'amber' };
+const verDot = { UNPUBLISHED:'#949EA6', PUBLISHED:'#54CB0B', ARCHIVED:'#FAB700' };
+const pill = s => `<span class="pill ${pillClass[s]}">${s}</span>`;
+
+function render(){
+  const v=cur(); const pub=published();
+  const cfg=OBJ_CFG[S.type];
+
+  // switcher state
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on', b.dataset.o===S.type));
+  document.getElementById('swDesc').textContent = {
+    A:'Brak statusów obiektu — bez przycisków Activate / Pause / Stop.',
+    B:'Statusy: Draft → Active ⇄ Inactive (Activate / Pause / Stop).',
+    C:'Statusy: Draft ⇄ Active (Activate / Deactivate).'
+  }[S.type];
+
+  document.getElementById('objTitle').textContent = cfg.name;
+  document.getElementById('objPill').innerHTML = cfg.hasStatus ? pill(S.object) : '';
+
+  // content view: flow editor for Object B, form for A/C
+  const isB = S.type==='B';
+  document.getElementById('viewForm').style.display = isB ? 'none' : 'block';
+  document.getElementById('viewFlow').style.display = isB ? 'block' : 'none';
+
+  // ---- VERSION GROUP: picker (colored name badge) + version actions ----
+  let verBtns;
+  if(v.status==='UNPUBLISHED'){
+    verBtns = `<button class="btn text" onclick="saveDraft()">Save</button><button class="btn blue" onclick="openPublish()">Publish</button>`;
+  } else if(v.status==='PUBLISHED'){
+    verBtns = `<button class="btn blue" onclick="editAsDraft()">Edit new version</button>`;
+  } else {
+    verBtns = `<div class="ver-picker">
+        <button class="btn blue" onclick="toggleMenu('restoreMenu',event)">Restore <svg class="cv" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="menu" id="restoreMenu" style="display:none">
+          <div class="m-item" onclick="restoreAsDraft()">Restore as unpublished</div>
+          <div class="m-item" onclick="restoreAndPublish()">Restore and publish</div>
+        </div></div>`;
+  }
+  document.getElementById('verGroup').innerHTML = `
+    <div class="ver-picker">
+      <button class="ver-btn2" onclick="toggleMenu('verMenu',event)">Version:
+        <span class="vbadge ${pillClass[v.status]}">${v.name}</span>
+        <svg class="ic" style="width:14px;height:14px;stroke-width:2;color:var(--grey-500)" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <span class="ver-tip">Version ${v.status.toLowerCase()}</span>
+      <div class="menu ver-menu" id="verMenu" style="display:none">${verMenuHtml()}</div>
+    </div>${verBtns}`;
+
+  // ---- OBJECT GROUP: divider + object actions + overflow ----
+  let objBtns='';
+  if(cfg.hasStatus && S.type==='C'){
+    objBtns = S.object==='ACTIVE'
+      ? `<button class="btn red" onclick="deactivateObject()">Deactivate</button>`
+      : `<button class="btn green" onclick="activateObject()">Activate</button>`;
+  } else if(cfg.hasStatus){
+    objBtns = S.object==='ACTIVE'
+      ? `<button class="btn yellow" onclick="pauseObject()">Pause</button><button class="btn red" onclick="stopObject()">Stop</button>`
+      : `<button class="btn green" onclick="activateObject()">Activate</button>`;
+  }
+  document.getElementById('objGroup').innerHTML = `<span class="hdr-divider"></span>${objBtns}<button class="btn icon ghost">⋯</button>`;
+}
+
+function verMenuHtml(){
+  return `<div class="ver-search"><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Search versions" onclick="event.stopPropagation()"/></div>`
+    + S.versions.map(ver=>`
+      <div class="vrow ${ver.id===S.currentId?'current':''}" onclick="selectVersion(${ver.id})">
+        <div class="vmeta"><div class="vname">${ver.name}</div><div class="vdate">${ver.updated}</div></div>
+        ${pill(ver.status)}
+        <div class="vinfo">
+          <div class="vi-h"><span class="vi-ico"><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span><span class="vi-name">${ver.name}</span></div>
+          <div class="vi-uuid">${ver.uuid||''}</div>
+          <div class="vi-line"><b>Status:</b> ${ver.status}</div>
+          <div class="vi-line"><b>Published:</b> ${ver.published||'—'}</div>
+          <div class="vi-line"><b>Author:</b> ${ver.author||'—'}</div>
+        </div>
+      </div>`).join('');
+}
+
+function flash(){}
+
+let tt; function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2200); }
+
+initAll(); render();
+</script>
+</body>
+</html>
