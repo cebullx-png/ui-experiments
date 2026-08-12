@@ -690,8 +690,8 @@ function saveVersion(){ const v=cur(); v.updated=now(); pushLog('ver','Zapisano 
 function cancelChanges(){ const v=cur(); pushLog('ver','Odrzucono zmiany w wersji „'+v.name+'"'); toast('Odrzucono zmiany w wersji'); }
 function setLive(){
   const v=cur(); const prev=liveVersion(); S.liveId=v.id;
-  pushLog('ver','Ustawiono „'+v.name+'" jako LIVE'+(prev&&prev.id!==v.id?' (poprzednia „'+prev.name+'" już nie jest live)':''));
-  render(); flash('ver'); toast('Wersja „'+v.name+'" jest teraz live');
+  pushLog('ver','Ustawiono „'+v.name+'" jako PUBLIC'+(prev&&prev.id!==v.id?' (poprzednia „'+prev.name+'" już nie jest public)':''));
+  render(); flash('ver'); toast('Wersja „'+v.name+'" jest teraz public');
 }
 function openCreateVersion(){ closeAllMenus(); showCreateVersionModal(); }
 function createVersion(name){
@@ -731,7 +731,7 @@ function showActivateModal(v){
      <div class="warn-body" style="padding-bottom:6px">
        <div class="warn-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:72px;height:72px"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/><circle cx="15" cy="9" r="1.8"/></svg></div>
        <h3>Activate integration?</h3>
-       <p>Aby aktywować, musisz ustawić wersję jako live.</p>
+       <p>Aby aktywować, musisz ustawić wersję jako public.</p>
      </div>
      <div class="modal-body" style="padding-top:8px">
        <label class="lbl" style="font-size:13px">Current version</label>
@@ -739,15 +739,15 @@ function showActivateModal(v){
          <div><div style="font-size:14px;font-weight:600;color:var(--grey-900)">${v.name}</div><div style="font-size:12px;color:var(--grey-500);margin-top:2px">${v.updated}</div></div>
        </div>
      </div>
-     <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">No, cancel</button><button class="btn green" onclick="confirmActivateSetLive(${v.id})">Yes, set live &amp; activate</button></div>
+     <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">No, cancel</button><button class="btn green" onclick="confirmActivateSetLive(${v.id})">Yes, set public &amp; activate</button></div>
    </div></div>`;
 }
 function confirmActivateSetLive(vId){
   const v=S.versions.find(x=>x.id===vId);
   S.liveId=v.id; S.object='ACTIVE';
-  pushLog('ver','Ustawiono „'+v.name+'" jako LIVE');
-  pushLog('obj','Aktywacja obiektu → ACTIVE (po ustawieniu wersji live)');
-  closeModal(); render(); flash('ver'); flash('obj'); toast('Wersja live, obiekt aktywny');
+  pushLog('ver','Ustawiono „'+v.name+'" jako PUBLIC');
+  pushLog('obj','Aktywacja obiektu → ACTIVE (po ustawieniu wersji public)');
+  closeModal(); render(); flash('ver'); flash('obj'); toast('Wersja public, obiekt aktywny');
 }
 function pauseObject(){ S.object='INACTIVE'; pushLog('obj','Pauza obiektu → INACTIVE (status wersji bez zmian)'); render(); flash('obj'); toast('Obiekt wstrzymany'); }
 function stopObject(){ S.object='INACTIVE'; pushLog('obj','Zatrzymanie obiektu → INACTIVE (status wersji bez zmian)'); render(); flash('obj'); toast('Obiekt zatrzymany'); }
@@ -804,14 +804,14 @@ function render(){
   const verBtns = `
     <button class="btn text" onclick="cancelChanges()">Cancel</button>
     <button class="btn blue" onclick="saveVersion()">Save</button>
-    ${ live ? '' : `<button class="btn green" onclick="setLive()">Set live</button>` }`;
+    ${ live ? '' : `<button class="btn green" onclick="setLive()">Set public</button>` }`;
   document.getElementById('verGroup').innerHTML = `
     <div class="ver-picker">
       <button class="ver-btn2" onclick="toggleMenu('verMenu',event)">Version: ${v.name}
-        ${ live ? '<span class="live-badge">LIVE</span>' : '' }
+        ${ live ? '<span class="live-badge">PUBLIC</span>' : '' }
         <svg class="ic" style="width:14px;height:14px;stroke-width:2;color:var(--grey-500)" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
       </button>
-      <span class="ver-tip">${ live ? 'Live version' : 'Not live — editable' }</span>
+      <span class="ver-tip">${ live ? 'Public version' : 'Not public — editable' }</span>
       <div class="menu ver-menu" id="verMenu" style="display:none">${verMenuHtml()}</div>
     </div>${verBtns}`;
 
@@ -836,11 +836,11 @@ function verMenuHtml(){
     + S.versions.map(ver=>`
       <div class="vrow ${ver.id===S.currentId?'current':''}" onclick="selectVersion(${ver.id})">
         <div class="vmeta"><div class="vname">${ver.name}</div><div class="vdate">${ver.updated}</div></div>
-        ${ isLive(ver) ? '<span class="live-badge">LIVE</span>' : '' }
+        ${ isLive(ver) ? '<span class="live-badge">PUBLIC</span>' : '' }
         <div class="vinfo">
           <div class="vi-h"><span class="vi-ico"><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span><span class="vi-name">${ver.name}</span></div>
           <div class="vi-uuid">${ver.uuid||''}</div>
-          <div class="vi-line"><b>Live:</b> ${isLive(ver)?'Yes':'No'}</div>
+          <div class="vi-line"><b>Public:</b> ${isLive(ver)?'Yes':'No'}</div>
           <div class="vi-line"><b>Updated:</b> ${ver.updated}</div>
           <div class="vi-line"><b>Author:</b> ${ver.author||'—'}</div>
         </div>
